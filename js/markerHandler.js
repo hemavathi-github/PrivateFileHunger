@@ -31,7 +31,7 @@ AFRAME.registerComponent("markerhandler", {
         attributes: {
           placeholder: "Type your table number",
           type: "number",
-          min: 1,
+          min: 1
         }
       }
     }).then(inputValue => {
@@ -54,7 +54,7 @@ AFRAME.registerComponent("markerhandler", {
       "saturday"
     ];
 
-    // Changing Model scale to initial scale
+    
     var dish = dishes.filter(dish => dish.id === markerId)[0];
 
     if (dish.unavailable_days.includes(days[todaysDay])) {
@@ -68,28 +68,27 @@ AFRAME.registerComponent("markerhandler", {
     } else {
       // make model visible
       var model = document.querySelector(`#model-${dish.id}`);
-
       model.setAttribute("visible", true);
 
-      // make ingredients Container visible
+      // Make ingredients Container visible
       var ingredientsContainer = document.querySelector(
         `#main-plane-${dish.id}`
       );
       ingredientsContainer.setAttribute("visible", true);
 
-      // make Price Plane visible
+      // Make Price Plane visible
       var pricePlane = document.querySelector(`#price-plane-${dish.id}`);
       pricePlane.setAttribute("visible", true);
 
-      // make Rating Plane visible
+      // Make Rating Plane visible
       var ratingPlane = document.querySelector(`#rating-plane-${dish.id}`);
       ratingPlane.setAttribute("visible", true);
 
-      // make review Plane visible
+      // Make review Plane visible
       var reviewPlane = document.querySelector(`#review-plane-${dish.id}`);
       reviewPlane.setAttribute("visible", true);
 
-      var model = document.querySelector(`#model-${dish.id}`);
+      // Changing Model scale to initial scale
       model.setAttribute("position", dish.model_geometry.position);
       model.setAttribute("rotation", dish.model_geometry.rotation);
       model.setAttribute("scale", dish.model_geometry.scale);
@@ -105,7 +104,6 @@ AFRAME.registerComponent("markerhandler", {
 
       // Handling Click Events
       ratingButton.addEventListener("click", () => this.handleRatings(dish));
-
       orderButtton.addEventListener("click", () => {
         var tNumber;
         tableNumber <= 9 ? (tNumber = `T0${tableNumber}`) : `T${tableNumber}`;
@@ -127,7 +125,7 @@ AFRAME.registerComponent("markerhandler", {
       payButton.addEventListener("click", () => this.handlePayment());
     }
   },
-
+  
   handleOrder: function (tNumber, dish) {
     // Reading currnt table order details
     firebase
@@ -282,41 +280,60 @@ AFRAME.registerComponent("markerhandler", {
 
   handleRatings: async function (dish) {
 
-    var tNumber
-    tableNumber <= 9 ? (tNumber = `T0${tableNumber}`) : `T${tableNumber}`
-    var orderSummary = this.getOrderSummary(tNumber)
-    var currentOrders = Object.keys(orderSummary.currentOrders)
-    if (currentOrders.length > 0) {
-      document.getElementById("rating-modal-div").style.display = "flex"
-      document.getElementById("rating-input").value = "0"
-      document.getElementById("feedback-value").value = ""
-      var RateButton = document.getElementById("save-rating-button")
-      RateButton.addEventListener("click", () => {
-        document.getElementById("rating-modal-div").style.display = "none"
-        var rating = document.getElementById("rating-input").value
-        var feedback = document.getElementById("feedback-value").value
-        firebase.firestore().collection("dishes").doc(dish.id).update({
-          last_review: feedback, last_rating: rating
-        })
+    // Getting Table Number
+    var tNumber;
+    tableNumber <= 9 ? (tNumber = `T0${tableNumber}`) : `T${tableNumber}`;
+    
+    // Getting Order Summary from database
+    var orderSummary = await this.getOrderSummary(tNumber);
+
+    var currentOrders = Object.keys(orderSummary.current_orders);    
+
+    if (currentOrders.length > 0 && currentOrders==dish.id) {
+      
+      // Close Modal
+      document.getElementById("rating-modal-div").style.display = "flex";
+      document.getElementById("rating-input").value = "0";
+      document.getElementById("feedback-input").value = "";
+
+      //Submit button click event
+      var saveRatingButton = document.getElementById("save-rating-button");
+
+      saveRatingButton.addEventListener("click", () => {
+        document.getElementById("rating-modal-div").style.display = "none";
+        //Get the input value(Review & Rating)
+        var rating = document.getElementById("rating-input").value;
+        var feedback = document.getElementById("feedback-input").value;
+
+        //Update db
+        firebase
+          .firestore()
+          .collection("dishes")
+          .doc(dish.id)
+          .update({
+            last_review: feedback,
+            last_rating: rating
+          })
           .then(() => {
             swal({
-              icon: "Feedback Recieved",
-              title: "Thanks For Your Opinion !",
-              text: "We Hope You Enjoyed Your Experience !!",
+              icon: "success",
+              title: "Thanks For Rating!",
+              text: "We Hope You Like Dish !!",
               timer: 2500,
               buttons: false
             });
-          })
-      })
-    }
-    else {
+          });
+      });
+    } else{
       swal({
-        title: "No Order To Rate Dish",
-        text: "No Order To Rate Dish",
+        icon: "warning",
+        title: "Oops!",
+        text: "No dish found to give ratings!!",
         timer: 2500,
         buttons: false
-      })
+      });
     }
+
   },
   handleMarkerLost: function () {
     // Changing button div visibility
